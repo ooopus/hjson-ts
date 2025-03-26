@@ -1,0 +1,75 @@
+{
+  "name": "hjson-ts",
+  "description": "A human-friendly JSON format with comments, relaxed syntax and better error handling. TypeScript implementation.",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/hjson.cjs.js",
+  "module": "./dist/hjson.es.js",
+  "browser": "./dist/hjson.iife.js",
+  "unpkg": "./dist/hjson.iife.js",
+  "jsdelivr": "./dist/hjson.iife.js",
+  "types": "./dist/types/hjson.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/hjson.d.ts",
+      "import": "./dist/hjson.es.js",
+      "require": "./dist/hjson.cjs.js",
+      "browser": "./dist/hjson.iife.js",
+      "umd": "./dist/hjson.umd.js",
+      "default": "./dist/hjson.es.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=14.16"
+  },
+  "keywords": [
+    "json",
+    "comments",
+    "config",
+    "hjson",
+    "parser",
+    "serializer",
+    "human",
+    "typescript",
+    "browser",
+    "node"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "clean": "rimraf dist",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "oxlint src",
+    "dev": "vite build --watch"
+  },
+  "homepage": "https://hjson.github.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ooopus/hjson-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ooopus/hjson-ts/issues"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.28.1",
+    "@size-limit/preset-small-lib": "^11.2.0",
+    "@types/node": "^22.13.13",
+    "@vitest/coverage-v8": "3.0.9",
+    "oxlint": "^0.16.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.3",
+    "vite-plugin-dts": "^4.5.3",
+    "vite-plugin-node-polyfills": "^0.23.0",
+    "vitest": "^3.0.9"
+  },
+  "packageManager": "pnpm@10.6.5+sha512.cdf928fca20832cd59ec53826492b7dc25dc524d4370b6b4adbf65803d32efaa6c1c88147c0ae4e8d579a6c9eec715757b50d4fa35eea179d868eada4ed043af"
+}

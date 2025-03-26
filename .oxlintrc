@@ -1,0 +1,10 @@
+{
+  "exclude": ["dist", "node_modules"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "complexity": "warn",
+    "style": "warn",
+    "performance": "warn"
+  }
+}
