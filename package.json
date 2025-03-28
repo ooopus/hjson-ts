@@ -1,7 +1,7 @@
 {
   "name": "hjson-ts",
   "description": "A human-friendly JSON format with comments, relaxed syntax and better error handling. TypeScript implementation.",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "main": "./dist/hjson.cjs.js",
   "module": "./dist/hjson.es.js",
