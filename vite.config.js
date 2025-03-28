@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
   build: {
@@ -12,7 +11,6 @@ export default defineConfig({
       fileName: (format) => `hjson.${format}.js`
     },
     rollupOptions: {
-      external: [...Object.keys(pkg.dependencies || {})],
       output: {
         exports: 'named'
       }
