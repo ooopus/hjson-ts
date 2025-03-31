@@ -18,7 +18,7 @@ import { DSF } from './dsf';
  * @example
  * ```typescript
  * const options: StringifyOptions = {
- *   keepWsc: true,
+ *   keepWhitespaceAndComment: true,
  *   bracesSameLine: true,
  *   quotes: 'strings',
  *   space: 2
@@ -36,7 +36,7 @@ export interface StringifyOptions {
    * 
    * @default false
    */
-  keepWsc?: boolean;
+  keepWhitespaceAndComment?: boolean;
 
   /** 
    * Condense output
