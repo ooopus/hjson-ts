@@ -31,7 +31,7 @@ export default function parse(source: string, opt?: ParseOptions): any {
     t: '\t'
   };
 
-  const keepComments = opt?.keepWhitespaceAndComment;
+  const keepComments = opt?.keepWhitespaceAndComments;
   const runDsf = loadDsf(opt?.dsf, 'parse'); // Domain specific formats
   const legacyRoot = opt?.legacyRoot !== false; // Default to true
 

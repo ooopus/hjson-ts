@@ -18,7 +18,7 @@ import { DSF } from './dsf';
  * @example
  * ```typescript
  * const options: ParseOptions = {
- *   keepWhitespaceAndComment: true,
+ *   keepWhitespaceAndComments: true,
  *   legacyRoot: false,
  *   dsf: [hexDSF, dateDSF]
  * };
@@ -35,7 +35,7 @@ export interface ParseOptions {
    * 
    * @default false
    */
-  keepWhitespaceAndComment?: boolean;
+  keepWhitespaceAndComments?: boolean;
 
   /** 
    * Domain Specific Format modules

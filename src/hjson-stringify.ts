@@ -103,7 +103,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
   const indent = typeof opt?.space === 'number' 
     ? ' '.repeat(opt.space) 
     : (opt?.space ?? '  ');
-  const keepComments = opt?.keepWhitespaceAndComment ?? false;
+  const keepComments = opt?.keepWhitespaceAndComments ?? false;
   const bracesSameLine = opt?.bracesSameLine ?? false;
   const quoteKeys = opt?.quotes === 'all' || opt?.quotes === 'keys';
   const quoteStrings = opt?.quotes === 'all' || opt?.quotes === 'strings' || opt?.separator === true;
@@ -319,12 +319,12 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
       if (Array.isArray(value)) {
         if (value.length === 0) return '[]';
 
-        let WhitespaceAndComment = commentInfo;
+        let WhitespaceAndComments = commentInfo;
 
         let result = '';
 
         // Format the array
-        if (condense > 0 && !WhitespaceAndComment && !hasComment) {
+        if (condense > 0 && !WhitespaceAndComments && !hasComment) {
           // Try to condense the array onto one line
           let res2 = '[ ';
           for (let i = 0; i < value.length; i++) {
@@ -343,7 +343,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
         result += indent1 + eol;
 
         for (let i = 0; i < value.length; i++) {
-          let comment = WhitespaceAndComment ? WhitespaceAndComment.a[i] : undefined;
+          let comment = WhitespaceAndComments ? WhitespaceAndComments.a[i] : undefined;
           if (comment && comment.b) result += indent2 + makeComment(comment.b, "", false).replace(/\n/g, eol + indent2) + eol;
           result += indent2 + visit(value[i], separator2, level+1, false, comment && (commentOnThisLine(comment.a) || comment.b));
           // Only add commas between array elements, not after the last one
@@ -352,9 +352,9 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
           result += eol;
         }
 
-        if (WhitespaceAndComment && WhitespaceAndComment.e) {
-          result += indent2 + WhitespaceAndComment.e[0].replace(/\n/g, eol + indent2) + eol;
-          if (WhitespaceAndComment.e[1]) result += indent2 + WhitespaceAndComment.e[1].replace(/\n/g, eol + indent2) + eol;
+        if (WhitespaceAndComments && WhitespaceAndComments.e) {
+          result += indent2 + WhitespaceAndComments.e[0].replace(/\n/g, eol + indent2) + eol;
+          if (WhitespaceAndComments.e[1]) result += indent2 + WhitespaceAndComments.e[1].replace(/\n/g, eol + indent2) + eol;
         }
 
         result += indent3 + token.arr[1];
@@ -364,12 +364,12 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
         const keys = Object.keys(value);
         if (keys.length === 0) return '{}';
 
-        let WhitespaceAndComment = commentInfo;
+        let WhitespaceAndComments = commentInfo;
         let showBraces = rootObject;
         let result = '';
 
         // Format the object
-        if (condense > 0 && !WhitespaceAndComment && !hasComment && hasSingleProp(value)) {
+        if (condense > 0 && !WhitespaceAndComments && !hasComment && hasSingleProp(value)) {
           // Try to condense the object onto one line
           let res2 = '{';
           let key = keys[0];
@@ -383,7 +383,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
         let indent2 = indent.repeat(level+1);
         let indent3 = indent.repeat(level);
         let separator2 = separator;
-        let isComment = WhitespaceAndComment && WhitespaceAndComment.c;
+        let isComment = WhitespaceAndComments && WhitespaceAndComments.c;
 
 
         if (showBraces) {
@@ -393,7 +393,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
 
         // Get key order
         let keys2: string[];
-        if (WhitespaceAndComment && WhitespaceAndComment.o) keys2 = WhitespaceAndComment.o;
+        if (WhitespaceAndComments && WhitespaceAndComments.o) keys2 = WhitespaceAndComments.o;
         else if (sortProps) keys2 = keys.sort();
         else keys2 = keys;
 
@@ -403,7 +403,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
           if (key === '__COMMENTS') continue;
           if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
 
-          let comment = isComment ? WhitespaceAndComment.c[key] : undefined;
+          let comment = isComment ? WhitespaceAndComments.c[key] : undefined;
           if (comment && comment.b) result += indent2 + makeComment(comment.b, "", false).replace(/\n/g, eol + indent2) + eol;
           const vs = visit(value[key], separator2, level+1, false, comment && (commentOnThisLine(comment.a) || comment.b));
           result += indent2 + quoteKey(key) + token.col[0] + ' ' + vs;
@@ -413,9 +413,9 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
           result += eol;
         }
 
-        if (WhitespaceAndComment && WhitespaceAndComment.e) {
-          result += indent2 + WhitespaceAndComment.e[0].replace(/\n/g, eol + indent2) + eol;
-          if (WhitespaceAndComment.e[1]) result += indent2 + WhitespaceAndComment.e[1].replace(/\n/g, eol + indent2) + eol;
+        if (WhitespaceAndComments && WhitespaceAndComments.e) {
+          result += indent2 + WhitespaceAndComments.e[0].replace(/\n/g, eol + indent2) + eol;
+          if (WhitespaceAndComments.e[1]) result += indent2 + WhitespaceAndComments.e[1].replace(/\n/g, eol + indent2) + eol;
         }
 
         result += indent3 + token.obj[1];

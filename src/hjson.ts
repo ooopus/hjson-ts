@@ -37,7 +37,7 @@ const rt = {
    */
   parse: function(text: string, options?: ParseOptions): any {
     const opts = options || {};
-    opts.keepWhitespaceAndComment = true;
+    opts.keepWhitespaceAndComments = true;
     return parse(text, opts);
   },
 
@@ -48,7 +48,7 @@ const rt = {
    */
   stringify: function(value: any, options?: StringifyOptions): string {
     const opts = options || {};
-    opts.keepWhitespaceAndComment = true;
+    opts.keepWhitespaceAndComments = true;
     return stringify(value, opts);
   },
 };
