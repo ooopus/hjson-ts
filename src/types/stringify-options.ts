@@ -71,7 +71,7 @@ export interface StringifyOptions {
    * 
    * @default 'min'
    */
-  quotes?: 'min' | 'keys' | 'strings' | 'all';
+  quotes?: 'min' | 'keys' | 'strings' | 'all' | 'always';
 
   /** 
    * Add separators

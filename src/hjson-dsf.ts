@@ -93,14 +93,11 @@ function isInvalidDsfChar(c: string): boolean {
 export const dsf: Record<string, DSF> = {
   hex: {
     name: "hex",
-    description: "parse hex number, e.g. 0xff (returns a number)",
-    parse: function(v: any) {
+    description: "parse hexadecimal numbers prefixed with 0x",
+    parse: function(v: string) {
       if (typeof v !== 'string') return undefined;
-      const m = /^\s*(?:0x)?([0-9a-fA-F]+)\s*$/.exec(v);
-      if (m) {
-        const r = parseInt(m[1], 16);
-        if (r >= 0) return r;
-      }
+      if (/^0x[0-9A-Fa-f]+$/.test(v))
+        return parseInt(v, 16);
       return undefined;
     },
     stringify: function(value: any) {
@@ -165,14 +162,7 @@ export const std = {
   hex: (opt?: any): DSF => {
     const out = opt && opt.out;
     return {
-      name: "hex",
-      description: "parse hexadecimal numbers prefixed with 0x",
-      parse: function(value: any) {
-        if (typeof value !== 'string') return undefined;
-        if (/^0x[0-9A-Fa-f]+$/.test(value))
-          return parseInt(value, 16);
-        return undefined;
-      },
+      ...dsf.hex,
       stringify: function(value: any) {
         if (out && Number.isInteger(value))
           return "0x" + value.toString(16);
@@ -182,3 +172,8 @@ export const std = {
   },
   date: (_opt?: any): DSF => ({...dsf.date})
 };
+
+export default {
+  std,
+  loadDsf
+}

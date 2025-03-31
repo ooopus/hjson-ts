@@ -25,55 +25,63 @@
  * };
  * ```
  */
+export interface TokenEntry {
+  length: number;
+  0: string;
+  1: string;
+  2?: number; // Start token original length
+  3?: number; // End token original length
+}
+
 export interface Token {
   /** Object tokens: opening and closing braces */
-  obj: [string, string];
+  obj: TokenEntry;
 
   /** Array tokens: opening and closing brackets */
-  arr: [string, string];
+  arr: TokenEntry;
 
   /** Unquoted key tokens */
-  key: [string, string];
+  key: TokenEntry;
 
   /** Quoted key tokens */
-  qkey: [string, string];
+  qkey: TokenEntry;
 
   /** Colon separator tokens */
-  col: [string, string];
+  col: TokenEntry;
 
   /** Comment tokens */
-  com: [string, string];
+  com: TokenEntry;
 
   /** Unquoted string tokens */
-  str: [string, string];
+  str: TokenEntry;
 
   /** Quoted string tokens */
-  qstr: [string, string];
+  qstr: TokenEntry;
 
   /** Multiline string tokens */
-  mstr: [string, string];
+  mstr: TokenEntry;
 
   /** Number tokens */
-  num: [string, string];
+  num: TokenEntry;
 
   /** Literal tokens (true, false, null) */
-  lit: [string, string];
+  lit: TokenEntry;
 
   /** Domain Specific Format tokens */
-  dsf: [string, string];
+  dsf: TokenEntry;
 
   /** Escape sequence tokens */
-  esc: [string, string];
+  esc: TokenEntry;
 
   /** Unicode escape sequence tokens */
-  uni: [string, string];
+  uni: TokenEntry;
 
   /** Remainder tokens */
-  rem: [string, string];
+  rem: TokenEntry;
 
   /** 
    * Index signature for additional token types
    * Allows for extension of token types while maintaining type safety
    */
-  [key: string]: string[];
+  [key: string]: TokenEntry;
 }

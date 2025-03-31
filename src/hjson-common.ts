@@ -155,12 +155,12 @@ export function forceComment(text: string): string {
   return lines.join('\n');
 }
 
-/**
- * Sets comments on a value
- * @param value The value to set comments on
- * @param comments The comments to set
- * @returns The comment object
- */
-export function setComment(value: any, comments: Comments): Comments {
-  return createComment(value, comments);
+export default {
+  getEOL,
+  setEOL,
+  tryParseNumber,
+  createComment,
+  removeComment,
+  getComment,
+  forceComment
 }

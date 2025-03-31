@@ -4,7 +4,7 @@
  */
 
 import { StringifyOptions } from './types/stringify-options';
-import { Token } from './types/token';
+import { Token, TokenEntry } from './types/token';
 import * as common from './hjson-common';
 import { loadDsf } from './hjson-dsf';
 
@@ -33,7 +33,71 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
     rem: [ '', '' ],
   };
 
+  const ColorToken: Token = {
+      obj: ['\x1b[37m{\x1b[0m', '\x1b[37m}\x1b[0m'],
+      arr: ['\x1b[37m[\x1b[0m', '\x1b[37m]\x1b[0m'],
+      key: ['\x1b[33m', '\x1b[0m'],
+      qkey: ['\x1b[33m"', '"\x1b[0m'],
+      col: ['\x1b[37m:\x1b[0m', ''],
+      com: ['\x1b[37m,\x1b[0m', ''],
+      str: ['\x1b[37;1m', '\x1b[0m'],
+      qstr: ['\x1b[37;1m"', '"\x1b[0m'],
+      mstr: ["\x1b[37;1m'''", "'''\x1b[0m"],
+      num: ['\x1b[36;1m', '\x1b[0m'],
+      lit: ['\x1b[36m', '\x1b[0m'],
+      dsf: ['\x1b[37m', '\x1b[0m'],
+      esc: ['\x1b[31m\\', '\x1b[0m'],
+      uni: ['\x1b[31m\\u', '\x1b[0m'],
+      rem: ['\x1b[35m', '\x1b[0m'],
+  };
+
+  const commonRange = '\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff';
+  const needsEscape = new RegExp('[\\\\\\"\x00-\x1f' + commonRange + ']', 'g');
+  const needsQuotes = new RegExp(
+    '^\\s|^"|^\'|^#|^\\/\\*|^\\/\\/|^\\{|^\\}|^\\[|^\\]|^:|^,|\\s$|[\x00-\x1f' +
+    commonRange + ']', 'g'
+  );
+
+  const startsWithKeyword = new RegExp(
+    '^(true|false|null)\\s*((,|\\]|\\}|#|//|/\\*).*)?$'
+  );
+  const needsEscapeName = /[,\{\[\}\]\s:#"']|\/\/|\/\*/;
+  
+  const meta: { [key: string]: string } = {
+    '\b': 'b',
+    '\t': 't',
+    '\n': 'n',
+    '\f': 'f',
+    '\r': 'r',
+    '"': '"',
+    '\\': '\\',
+  };
+
+  let wrapLen = 0;
+  let token = plainToken;
+
   // Options
+  // Handle legacy 'always' quotes option
+  if (opt?.quotes === 'always') {
+    opt.quotes = 'strings';
+  }
+
+  token = opt?.colors ? ColorToken : plainToken;
+  // Always add lengths like JS, even if potentially meaningless for colors
+  (Object.keys(plainToken) as Array<keyof Token>).forEach(k => {
+    const entry = plainToken[k];
+    // Ensure the token entry has space for length properties if needed
+    if (token[k].length < 4) {
+      // Only add if they don't exist, prevents overwriting color tokens if they were structured differently
+      (token[k] as any)[2] = entry[0].length;
+      (token[k] as any)[3] = entry[1].length;
+    } else {
+      // If structure allows, assign them regardless
+      (token[k] as any)[2] = entry[0].length;
+      (token[k] as any)[3] = entry[1].length;
+    }
+  });
+  
   const eol = opt?.eol ?? common.getEOL();
   // Ensure indent is always a string
   const indent = typeof opt?.space === 'number' 
@@ -44,17 +108,25 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
   const quoteKeys = opt?.quotes === 'all' || opt?.quotes === 'keys';
   const quoteStrings = opt?.quotes === 'all' || opt?.quotes === 'strings' || opt?.separator === true;
   const condense = opt?.condense ?? 0;
-  let multiline = opt?.multiline === 'std' || opt?.multiline === undefined ? 1 : 
+  let multiline = quoteStrings ? 0 :
+                 opt?.multiline === 'std' || opt?.multiline === undefined ? 1 : 
                  opt?.multiline === 'no-tabs' ? 2 : 
-                 opt?.multiline === 'off' ? 0 : 
+                 opt?.multiline === 'off' || opt?.multiline === false ? 0 : 
                  typeof opt?.multiline === 'number' ? opt.multiline : 1;
+
+  const needsEscapeML = new RegExp(
+    "'''|^[\\s]+$|[\x00-" +
+    (multiline === 2 ? '\x09' : '\x08') +
+    '\x0b\x0c\x0e-\x1f' + commonRange + ']',
+    'g'
+  );
+
   // Only add commas when separator is explicitly set to true
   const separator = opt?.separator === true ? ',' : '';
   const sortProps = opt?.sortProps ?? false;
-  const token = plainToken;
+
   const runDsf = loadDsf(opt?.dsf, 'stringify');
 
-  if (quoteStrings || multiline === 0) multiline = 0;
 
   /**
    * Checks if a string is a Hjson keyword (true, false, null) or a number
@@ -114,11 +186,28 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
    * @param isRootObject - Whether this is the root object
    * @returns The formatted string
    */
-  function quotelessString(value: string, separator: string, level: number, isRootObject?: boolean): string {
-    if (separator) return wrap(token.qstr, JSON.stringify(value).slice(1, -1));
-    if (isSafeString(value)) return wrap(token.str, value);
-    if (multiline && !isRootObject && value.indexOf('\n') >= 0) return mlString(value, level);
-    return wrap(token.qstr, JSON.stringify(value).slice(1, -1));
+  function quotelessString(value: string, separator: string, level: number, isRootObject?: boolean, hasComment?: boolean): string {
+    needsQuotes.lastIndex = 0;
+    startsWithKeyword.lastIndex = 0;
+
+    if (quoteStrings || 
+        hasComment || 
+        separator || 
+        needsQuotes.test(value) ||
+        common.tryParseNumber(value, true) !== undefined ||
+        startsWithKeyword.test(value)) {
+      
+      needsEscape.lastIndex = 0;
+      needsEscapeML.lastIndex = 0;
+      if (!needsEscapeML.test(value) && !isRootObject && multiline) {
+        return mlString(value, level);
+      } else if (!needsEscape.test(value)) {
+        return wrap(token.qstr, value);
+      } else {
+        return wrap(token.qstr, quoteReplace(value));
+      }
+    }
+    return wrap(token.str, value);
   }
 
   /**
@@ -128,22 +217,41 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
    * @returns The formatted multiline string
    */
   function mlString(value: string, level: number): string {
-    // Remove CR and add the triple quotes
-    let res = value.replace(/\r[\n]?/g, '\n');
-    const indentStr = indent.repeat(level+1);
+    const lines = value.replace(/\r/g, '').split('\n');
+    const currentIndent = indent.repeat(level); // Indent of the line before the multiline string
+    const innerIndent = currentIndent + indent; // Indent for lines inside '''
+
+    if (lines.length === 1 && !value.includes("'''")) {
+      // Single line without ''' conflict
+      return token.mstr[0] + value + token.mstr[1];
+    }
+
+    let result = token.mstr[0] + eol;
     
-    // Process multiline string indentation
-    const lines = res.split('\n');
-    const indentedContent = lines.map((line, i) => 
-      // Don't add indentation to empty first and last lines
-      (i === 0 || i === lines.length-1) && line.trim() === '' ? line : indentStr + line
-    ).join(eol);
-    
-    // Triple quotes at the end with proper indentation
-    if (res[res.length-1] === '\n') 
-      return token.mstr[0] + eol + indentedContent + indentStr + token.mstr[1];
-    else 
-      return token.mstr[0] + eol + indentedContent + eol + indentStr + token.mstr[1];
+    // Process each line with proper indentation
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isFirstOrLast = i === 0 || i === lines.length - 1;
+      const isEmpty = line.trim() === '';
+      
+      // Don't indent empty first/last lines
+      if (isFirstOrLast && isEmpty) {
+        result += line;
+      } else {
+        result += innerIndent + line;
+      }
+      
+      if (i < lines.length - 1) {
+        result += eol;
+      }
+    }
+
+    // Add final newline and closing quotes with proper indentation
+    if (value[value.length - 1] !== '\n') {
+      result += eol;
+    }
+    result += currentIndent + token.mstr[1];
+    return result;
   }
 
   /**
@@ -155,6 +263,8 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
     // Special handling for 'null' keyword
     if (key === 'null' && !quoteKeys)
       return wrap(token.key, key);
+
+    // Check if we can insert this key without quotes
 
     if (quoteKeys || !isSafeString(key))
       return wrap(token.qkey, JSON.stringify(key).slice(1, -1));
@@ -212,8 +322,8 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
           // Try to condense the array onto one line
           let res2 = '[ ';
           for (let i = 0; i < value.length; i++) {
-            if (i > 0) res2 += ', ';
-            res2 += visit(value[i], 'compact', 0, false, false);
+            if (i > 0) res2 += token.com[0] + ' ';
+            res2 += visit(value[i], separator, 0, false, false);
           }
           res2 += ' ]';
           if (res2.length <= condense) return res2;
@@ -255,10 +365,11 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
         // Format the object
         if (condense > 0 && !wsc && !hasComment && hasSingleProp(value)) {
           // Try to condense the object onto one line
-          let res2 = '{ ';
+          let res2 = '{';
           let key = keys[0];
-          res2 += quoteKey(key) + ': ' + visit(value[key], 'compact', 0, false, false);
-          res2 += ' }';
+          let separator2 = separator;
+          res2 += quoteKey(key) + token.col[0] + ' ' + visit(value[key], separator2, 0, false, false);
+          res2 += '}';
           if (res2.length <= condense) return res2;
         }
 
@@ -288,8 +399,8 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
 
           let comment = isComment ? wsc.c[key] : undefined;
           if (comment && comment.b) result += indent2 + makeComment(comment.b, "", false).replace(/\n/g, eol + indent2) + eol;
-          result += indent2 + quoteKey(key) + token.col[0] + ' ' + 
-            visit(value[key], separator2, level+1, false, comment && (commentOnThisLine(comment.a) || comment.b));
+          const vs = visit(value[key], separator2, level+1, false, comment && (commentOnThisLine(comment.a) || comment.b));
+          result += indent2 + quoteKey(key) + token.col[0] + ' ' + vs;
           // Only add commas when separator is explicitly set to true
           if (separator2) result += token.com[0];
           if (comment && comment.a) result += makeComment(comment.a, commentOnThisLine(comment.a) ? " " : "", commentOnThisLine(comment.a)).replace(/\n/g, eol + indent2);
@@ -316,9 +427,28 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
    * @param v - The value to wrap
    * @returns The wrapped string
    */
-
-  function wrap(tk: [string, string, number?, number?], v: string): string {
+  function wrap(tk: TokenEntry, v: string): string {
+    // Only subtract precomputed lengths if they exist (i.e., not in color mode)
+    const lenDelta = (tk[2] ?? 0) + (tk[3] ?? 0);
+    // Accumulate length based on value and actual token chars (excluding ANSI if colors)
+    if (opt?.colors) {
+      // Strip ANSI codes before measuring length
+      wrapLen += v.replace(/\x1b\[[0-9;]*m/g, '').length;
+    } else {
+      // Use numeric indices to access token parts
+      const startToken = tk[0];
+      const endToken = tk[1];
+      wrapLen += startToken.length + endToken.length - lenDelta + v.length;
+    }
     return tk[0] + v + tk[1];
+  }
+
+  function quoteReplace(string: string): string {
+    return string.replace(needsEscape, (a) => {
+      const c = meta[a];
+      if (typeof c === 'string') return wrap(token.esc, c);
+      return wrap(token.uni, ('0000' + a.charCodeAt(0).toString(16)).slice(-4));
+    });
   }
 
   /**
