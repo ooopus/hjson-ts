@@ -61,7 +61,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
   const startsWithKeyword = new RegExp(
     '^(true|false|null)\\s*((,|\\]|\\}|#|//|/\\*).*)?$'
   );
-  const needsEscapeName = /[,\{\[\}\]\s:#"']|\/\/|\/\*/;
+  const needsEscapeName = /[,{\[}\]\s:#"']|\/\/|\/\*/;
   
   const meta: { [key: string]: string } = {
     '\b': 'b',
@@ -218,15 +218,15 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
    */
   function mlString(value: string, level: number): string {
     const lines = value.replace(/\r/g, '').split('\n');
-    const currentIndent = indent.repeat(level); // Indent of the line before the multiline string
-    const innerIndent = currentIndent + indent; // Indent for lines inside '''
+    const multilineStringIndent = indent.repeat(level + 1); // Indent of the '''
+    const innerIndent = multilineStringIndent; // Indent for lines inside '''
 
     if (lines.length === 1 && !value.includes("'''")) {
       // Single line without ''' conflict
-      return token.mstr[0] + value + token.mstr[1];
+      return multilineStringIndent + token.mstr[0] + value + token.mstr[1]; // Use ''' wrap the entire string
     }
 
-    let result = token.mstr[0] + eol;
+    let result = multilineStringIndent + token.mstr[0] + eol;
     
     // Process each line with proper indentation
     for (let i = 0; i < lines.length; i++) {
@@ -250,7 +250,7 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
     if (value[value.length - 1] !== '\n') {
       result += eol;
     }
-    result += currentIndent + token.mstr[1];
+    result += multilineStringIndent + token.mstr[1];
     return result;
   }
 
@@ -291,14 +291,20 @@ export default function stringify(value: any, opt?: StringifyOptions): string {
 
     // Handle different value types
     if (value === null) return wrap(token.lit, 'null');
-    if (typeof value === 'boolean') return wrap(token.lit, value ? 'true' : 'false');
+
+    if (typeof value === 'boolean')
+      return wrap(token.lit, value ? 'true' : 'false');
+
     if (typeof value === 'string') {
-      if (quoteStrings) return wrap(token.qstr, JSON.stringify(value).slice(1, -1));
+
+      if (quoteStrings)
+        return wrap(token.qstr, JSON.stringify(value).slice(1, -1));
+
       else {
         // Check for multiline string
         if (multiline && !rootObject && value.indexOf('\n') >= 0) {
           // For multiline strings, return a special marker that will be replaced with proper formatting
-          return "\n" + indent.repeat(level+1) + mlString(value, level);
+          return "\n" + mlString(value, level);
         }
         return quotelessString(value, separator, level, rootObject);
       }

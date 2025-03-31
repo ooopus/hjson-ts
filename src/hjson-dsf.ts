@@ -100,7 +100,7 @@ export const dsf: Record<string, DSF> = {
         return parseInt(v, 16);
       return undefined;
     },
-    stringify: function(value: any) {
+    stringify: function(_value: any) {
       return undefined;
     }
   },
